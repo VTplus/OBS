@@ -3642,6 +3642,53 @@ LRESULT CALLBACK OBS::OBSProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
                     App->SetFullscreenMode(!App->bFullscreenMode);
                     break;
 
+					/**************************************** custom vtplus commands **************************/
+				case ID_FULLSCREEN_ON:
+					App->SetFullscreenMode(true);
+					break;
+
+				case ID_FULLSCREEN_OFF:
+					App->SetFullscreenMode(false);
+					break;
+
+				case ID_PREVIEW_ON:
+					if (!App->IsRunning()) {
+						App->RefreshStreamButtons(true);
+						App->bTestStream = true;
+						App->ToggleCapturing();
+						App->RefreshStreamButtons();
+					}
+					break;
+
+				case ID_PREVIEW_OFF:
+					if (App->IsRunning()) {
+						App->RefreshStreamButtons(true);
+						App->bTestStream = true;
+						App->ToggleCapturing();
+						App->RefreshStreamButtons();
+					}
+					break;
+
+				case ID_RECORD_ON:
+					if (!App->IsRecording())
+					{
+						App->RefreshStreamButtons(true);
+						App->ToggleRecording();
+						App->RefreshStreamButtons();
+					}
+					break;
+
+				case ID_RECORD_OFF:
+					if (App->IsRecording())
+					{
+						App->RefreshStreamButtons(true);
+						App->ToggleRecording();
+						App->RefreshStreamButtons();
+					}
+					break;
+
+					/**************************************** END custom vtplus commands END **************************/
+
                 case ID_SHOWLOG:
                     ShowWindow(hwndLogWindow, SW_SHOW);
                     SetForegroundWindow(hwndLogWindow);

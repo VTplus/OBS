@@ -443,6 +443,17 @@
 #define ID_PROFILE_IMPORT               40086
 #define ID_PROFILE_EXPORT               40087
 
+
+/**************************************** custom vtplus commands **************************/
+#define ID_FULLSCREEN_ON               40090
+#define ID_FULLSCREEN_OFF              40091
+#define ID_PREVIEW_ON				   40092
+#define ID_PREVIEW_OFF                 40093
+#define ID_RECORD_ON                   40094
+#define ID_RECORD_OFF                  40095
+
+
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

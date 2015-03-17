@@ -998,7 +998,7 @@ BEGIN
         END
         MENUITEM "MainMenu.Settings.OpenLogFolder", ID_SETTINGS_OPENLOGFOLDER
         MENUITEM SEPARATOR
-        MENUITEM "MainMenu.Help.CheckForUpdates", ID_HELP_CHECK_FOR_UPDATES
+        MENUITEM "MainMenu.Help.CheckForUpdates", ID_HELP_CHECK_FOR_UPDATES, INACTIVE // vtplus modified version must not update
     END
 END
 

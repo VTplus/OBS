@@ -374,6 +374,8 @@ bool ParseUpdateManifest (TCHAR *path, BOOL *updatesAvailable, String &descripti
 
 DWORD WINAPI CheckUpdateThread (VOID *arg)
 {
+	return 0; //update would remove vtplus modification
+
     int responseCode;
     TCHAR extraHeaders[256];
     BYTE manifestHash[20];
