@@ -81,12 +81,21 @@ extern TCHAR        lpAppDataPath[MAX_PATH];
 #define OBS_VERSION_SUFFIX ""
 #endif
 
-#define OBS_VERSION             0x006500 //version number is 0xMMmmtt (super-major.major.minor - hex)
-#define OBS_VERSION_STRING_RAW  "Open Broadcaster Software v0.65b - modified by VTplus based on GNU GPL v2"
+#define OBS_VERSION             0x006501 //version number is 0xMMmmtt (super-major.major.minor - hex)
+#define OBS_VERSION_STRING_RAW  "Open Broadcaster Software v0.651b"
 //#define OBS_TEST_BUILD          1 //define this if releasing a test build to disable the auto updater
 
 #define OBS_VERSION_STRING_ANSI OBS_VERSION_STRING_RAW OBS_VERSION_SUFFIX
 #define OBS_VERSION_STRING      TEXT(OBS_VERSION_STRING_RAW) TEXT(OBS_VERSION_SUFFIX)
+
+// to fullfill GPL requiremtents, until changes are merged into official version
+#define OBS_VERSION_VTplus " - modified by VTplus"
+#ifndef OBS_VERSION_VTplus
+#define OBS_VERSION_VTplus ""
+#else
+#define OBS_DISABLE_AUTOUPDATE 1 // windows message interface changes must not be lost due to an update  to unmodified version
+#endif
+#define OBS_VERSION_STRING      TEXT(OBS_VERSION_STRING_RAW) TEXT(OBS_VERSION_SUFFIX) TEXT(OBS_VERSION_VTplus)
 
 #ifdef _DEBUG
 #define OBS_DISABLE_AUTOUPDATE 1

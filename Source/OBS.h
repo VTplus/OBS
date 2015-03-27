@@ -1208,7 +1208,7 @@ public:
     inline void EnableSceneSwitching(bool bEnable) {bDisableSceneSwitching = !bEnable;}
 
     inline bool IsRunning()    const {return bRunning;}
-	inline bool IsRecording()  const {return bRecording;} // vtplus modification
+	inline bool IsRecording()  const {return bRecording;} // VTplus modification
     inline UINT GetFPS()       const {return fps;}
     inline UINT GetFrameTime() const {return frameTime;}
 

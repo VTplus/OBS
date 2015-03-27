@@ -444,7 +444,7 @@
 #define ID_PROFILE_EXPORT               40087
 
 
-/**************************************** custom vtplus commands **************************/
+/**************************************** custom VTplus commands **************************/
 #define ID_FULLSCREEN_ON               40090
 #define ID_FULLSCREEN_OFF              40091
 #define ID_PREVIEW_ON				   40092
