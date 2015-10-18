@@ -3593,7 +3593,25 @@ LRESULT CALLBACK OBS::OBSProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 
                 case ID_FILE_EXIT:
                 case ID_EXIT:
-                    PostQuitMessage(0);
+                    if (App->bRunning)
+                    {
+                        if (App->bRecording)
+                        {
+                            if (OBSMessageBox(hwnd, Str("CloseWhileActiveWarning.Message"), Str("CloseWhileActiveWarning.Title"), MB_ICONQUESTION | MB_YESNO) == IDYES)
+                            {
+                                PostQuitMessage(0);
+                            }
+                        }
+                        else if (App->bStreaming)
+                        {
+                            if (OBSMessageBox(hwnd, Str("CloseWhileActiveWarning.Message"), Str("CloseWhileActiveWarning.Title"), MB_ICONQUESTION | MB_YESNO) == IDYES)
+                            {
+                                PostQuitMessage(0);
+                            }
+                        }
+                    }
+                    else
+                        PostQuitMessage(0);
                     break;
 
                 case ID_RECORDINGSFOLDER:
@@ -3695,7 +3713,7 @@ LRESULT CALLBACK OBS::OBSProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
                     break;
 
                 case ID_HELP_VISITWEBSITE:
-                    ShellExecute(NULL, TEXT("open"), TEXT("http://www.obsproject.com"), 0, 0, SW_SHOWNORMAL);
+                    ShellExecute(NULL, TEXT("open"), TEXT("https://obsproject.com"), 0, 0, SW_SHOWNORMAL);
                     break;
 
                 case ID_HELP_OPENHELP:
@@ -4132,8 +4150,8 @@ LRESULT CALLBACK OBS::OBSProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
                                     iconRect.top  = textRect.top + 2;
                                     iconRect.bottom = textRect.bottom - 2;
 
-                                    gsVIRect.left = 1;
-                                    gsVIRect.right = 2;
+                                    gsVIRect.left = itemRect.left + 1;
+                                    gsVIRect.right = itemRect.left + 2;
                                     gsVIRect.top = iconRect.top + 1;
                                     gsVIRect.bottom = iconRect.bottom - 1;
 
@@ -4550,8 +4568,35 @@ LRESULT CALLBACK OBS::OBSProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
             break;
 
         case WM_CLOSE:
-            PostQuitMessage(0);
+            if (App->bRunning)
+            {
+                if (App->bRecording)
+                {
+                    if (OBSMessageBox(hwnd, Str("CloseWhileActiveWarning.Message"), Str("CloseWhileActiveWarning.Title"), MB_ICONQUESTION | MB_YESNO) == IDYES)
+                    {
+                        PostQuitMessage(0);
+                    }
+                }
+                else if (App->bStreaming)
+                {
+                    if (OBSMessageBox(hwnd, Str("CloseWhileActiveWarning.Message"), Str("CloseWhileActiveWarning.Title"), MB_ICONQUESTION | MB_YESNO) == IDYES)
+                    {
+                        PostQuitMessage(0);
+                    }
+                }
+            }
+            else
+                PostQuitMessage(0);
             break;
+
+        case WM_ENDSESSION:
+            if (wParam == TRUE)
+            {
+                // AppConfig / GlobalConfig should already save most important changes. A few UI
+                // things like last window size / position and other UI state gets lost though.
+                App->scenesConfig.Save();
+                return TRUE;
+            }
 
         default:
             if (App && message == App->wmExplorerRestarted)
@@ -4668,7 +4713,7 @@ Vect2 OBS::GetFrameToWindowScale()
     return MapFrameToWindowSize(Vect2(1.0f, 1.0f));
 }
 
-bool OBS::EnsureCropValid(SceneItem *&scaleItem, Vect2 &minSize, Vect2 &snapSize, bool bControlDown, int cropEdges, bool cropSymmetric) 
+bool OBS::EnsureCropValid(SceneItem *&scaleItem, Vect2 &minSize, Vect2 &snapSize, bool bSnap, int cropEdges, bool cropSymmetric) 
 {
     Vect2 scale = (scaleItem->GetSource() ? scaleItem->GetSource()->GetSize() : scaleItem->GetSize()) / scaleItem->GetSize();
 
@@ -4726,7 +4771,7 @@ bool OBS::EnsureCropValid(SceneItem *&scaleItem, Vect2 &minSize, Vect2 &snapSize
         }
         scaleItem->crop.z = (scaleItem->crop.z < 0.0f) ? 0.0f : scaleItem->crop.z;
     }
-    if (!bControlDown) 
+    if (bSnap)
     {
         // left
         if(CloseFloat(scaleItem->GetCrop().x, 0.0f, snapSize.x))
@@ -5055,7 +5100,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                             scaleItem->crop.y = ((frameStartMousePos.y - scaleItem->pos.y) + totalAdjust.y) * cropFactor.y;
                             if (!bCropSymmetric)
                                 scaleItem->crop.z = ((frameStartMousePos.y - scaleItem->pos.y) + totalAdjust.y) * cropFactor.y;
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeTop | (!bCropSymmetric ? edgeBottom : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeTop | (!bCropSymmetric ? edgeBottom : 0), !bCropSymmetric);
                             break;
 
                         case ItemModifyType_CropBottom:
@@ -5064,7 +5109,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                             scaleItem->crop.z = ((scaleItem->pos.y + scaleItem->size.y - frameStartMousePos.y) - totalAdjust.y) * cropFactor.y;
                             if (!bCropSymmetric)
                                 scaleItem->crop.y = ((scaleItem->pos.y + scaleItem->size.y - frameStartMousePos.y) - totalAdjust.y) * cropFactor.y;
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeBottom | (!bCropSymmetric ? edgeTop : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeBottom | (!bCropSymmetric ? edgeTop : 0), !bCropSymmetric);
                             break;
 
                         case ItemModifyType_CropLeft:
@@ -5073,7 +5118,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                             scaleItem->crop.x = ((frameStartMousePos.x - scaleItem->pos.x) + totalAdjust.x) * cropFactor.x;
                             if (!bCropSymmetric)
                                 scaleItem->crop.w = ((frameStartMousePos.x - scaleItem->pos.x) + totalAdjust.x) * cropFactor.x;
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeLeft | (!bCropSymmetric ? edgeRight : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeLeft | (!bCropSymmetric ? edgeRight : 0), !bCropSymmetric);
                             break;
 
                         case ItemModifyType_CropRight:
@@ -5082,7 +5127,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                             scaleItem->crop.w = ((scaleItem->pos.x + scaleItem->size.x - frameStartMousePos.x) - totalAdjust.x) * cropFactor.x;
                             if (!bCropSymmetric)
                                 scaleItem->crop.x = ((scaleItem->pos.x + scaleItem->size.x - frameStartMousePos.x) - totalAdjust.x) * cropFactor.x;
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeRight | (!bCropSymmetric ? edgeLeft : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeRight | (!bCropSymmetric ? edgeLeft : 0), !bCropSymmetric);
                             break;
                             
                         case ItemModifyType_CropBottomLeft:
@@ -5101,7 +5146,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 scaleItem->crop.y = amount * cropFactor.y;
                                 scaleItem->crop.z = amount * cropFactor.y;
                             }
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeLeft | edgeBottom | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeLeft | edgeBottom | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
                             break;
 
                         case ItemModifyType_CropBottomRight:
@@ -5120,7 +5165,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 scaleItem->crop.y = amount * cropFactor.y;
                                 scaleItem->crop.z = amount * cropFactor.y;
                             }
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeRight | edgeBottom | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeRight | edgeBottom | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
                             break;
 
                         case ItemModifyType_CropTopLeft:
@@ -5139,7 +5184,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 scaleItem->crop.y = amount * cropFactor.y;
                                 scaleItem->crop.z = amount * cropFactor.y;
                             }
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeLeft | edgeTop | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeLeft | edgeTop | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
                             break;
 
                         case ItemModifyType_CropTopRight:
@@ -5158,7 +5203,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 scaleItem->crop.y = amount * cropFactor.y;
                                 scaleItem->crop.z = amount * cropFactor.y;
                             }
-                            EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeRight | edgeTop | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
+                            EnsureCropValid(scaleItem, minSize, snapSize, !bControlDown, edgeRight | edgeTop | (!bCropSymmetric ? edgeAll : 0), !bCropSymmetric);
                             break;
 
                         case ItemModifyType_ScaleBottom:
@@ -5187,7 +5232,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 else
                                     scaleItem->size.x = scaleItem->startSize.x;
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropTL();
                             }
@@ -5218,7 +5263,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 totalAdjust.y = scaleItem->startSize.y-scaleItem->size.y;
                                 scaleItem->pos.y = scaleItem->startPos.y+totalAdjust.y;
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropBR() - scaleItem->size;
                             }
@@ -5250,7 +5295,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 else
                                     scaleItem->size.y = scaleItem->startSize.y;
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropTL();
                             }
@@ -5282,7 +5327,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 totalAdjust.x = scaleItem->startSize.x-scaleItem->size.x;
                                 scaleItem->pos.x = scaleItem->startPos.x+totalAdjust.x;
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropBR() - scaleItem->size;
                             }
@@ -5324,7 +5369,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                         scaleItem->size.y = scaleItem->size.x/baseScaleAspect;
                                 }
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropTL();
                             }
@@ -5362,7 +5407,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 totalAdjust = scaleItem->startSize-scaleItem->size;
                                 scaleItem->pos = scaleItem->startPos+totalAdjust;
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropBR() - scaleItem->size;
                             }
@@ -5406,7 +5451,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 totalAdjust.x = scaleItem->startSize.x-scaleItem->size.x;
                                 scaleItem->pos.x = scaleItem->startPos.x+totalAdjust.x;
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropTR() - Vect2(scaleItem->size.x, 0);
                             }
@@ -5451,7 +5496,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                                 totalAdjust.y = scaleItem->startSize.y-scaleItem->size.y;
                                 scaleItem->pos.y = scaleItem->startPos.y+totalAdjust.y;
 
-                                EnsureCropValid(scaleItem, minSize, snapSize, bControlDown, edgeAll, false);
+                                EnsureCropValid(scaleItem, minSize, snapSize, false, edgeAll, false);
 
                                 scaleItem->pos = pos - scaleItem->GetCropBL() - Vect2(0, scaleItem->size.y);
                             }
@@ -5516,7 +5561,7 @@ LRESULT CALLBACK OBS::RenderFrameProc(HWND hwnd, UINT message, WPARAM wParam, LP
                     Vect2 framePos = MapWindowToFramePos(mousePos);
                     App->scene->GetItemsOnPoint(framePos, items);
 
-                    if(bControlDown && App->bItemWasSelected)
+                    if(bControlDown && App->bItemWasSelected && items.Num())
                     {
                         SceneItem *lastItem = items.Last();
                         lastItem->Select(false);

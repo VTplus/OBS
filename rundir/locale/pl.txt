@@ -1,6 +1,8 @@
 RightToLeft="false"
 
 Add="Dodaj"
+AddFile="Dodaj plik"
+AddFolder="Dodaj folder"
 Preview="Podgląd"
 Order="Kolejność"
 Apply="Zastosuj"
@@ -44,6 +46,12 @@ StreamReport="Reportuj stream"
 MessageBoxWarningCaption="Uwaga"
 NoSourcesFound="Nie dodano żadnych źródeł obrazu! Czy na pewno chcesz streamować czarny ekran?"
 StreamClosePending="Stream lub plik wyjściowy nie został zakończony. Zamknięcie aplikacji OBS może spowodować zbyt wczesne zakończenie streamu lub uszkodzenie pliku wyjściowego. Czy chcesz poczekać jeszcze 15 sekund na zakończenie nadawania?"
+InstallServiceConfirm="Czy chcesz dodać usługę przesyłania strumieniowego '$1' do listy usług OBS?"
+InstallServiceAlreadyInstalled="Usługa streamingu '$1' jest już zainstalowana. Czy chcesz ją odinstalować?"
+InstallServiceInstalled="Usługa streamingu została zainstalowana. Znaleźć ją można w Ustawienia -> Streamowanie."
+
+DiskFull="Dysk jest pełny. Pliki konfiguracyjne, sceny i konfiguracje źródeł nie będą zapisywane poprawnie. Zwolnij trochę miejsca na dysku."
+BadAppDataPermissions="Folder z plikami konfiguracyjnymi OBS nie jest udostępniony do zapisu. Żadne ustawienia nie zostaną zapisane!\r\n\r\nSprawdź czy zapora internetowa, program antywirusowy lub jakakolwiek inna aplikacja ochronna nie blokuje OBS i czy uprawnienia do folderu AppData\\OBS są ustawione poprawnie."
 
 ImportGlobalSourceNameExists="Globalne źródło '$1' już istnieje w bieżącej kolekcji scen."
 ImportGlobalSources="Import globalnych źródeł"

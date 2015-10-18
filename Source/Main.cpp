@@ -99,6 +99,67 @@ static void LogModule(CTSTR lpModuleName, HMODULE addr)
 #endif
 }
 
+typedef DWORD (WINAPI *GETFILEVERSIONINFOSIZEWPROC)(LPCWSTR module, LPDWORD unused);
+typedef BOOL (WINAPI *GETFILEVERSIONINFOWPROC)(LPCWSTR module, DWORD unused, DWORD len, LPVOID data);
+typedef BOOL (WINAPI *VERQUERYVALUEWPROC)(LPVOID data, LPCWSTR subblock, LPVOID *buf, PUINT sizeout);
+
+static void LogWindowsVersion()
+{
+    HMODULE ver_module = GetModuleHandleW(L"version");
+    if (!ver_module)
+    {
+        ver_module = LoadLibraryW(L"version");
+        if (!ver_module)
+        {
+            Log(L"Couldn't get version module");
+            return;
+        }
+    }
+
+    GETFILEVERSIONINFOSIZEWPROC pGetFileVersionInfoSizeW = (GETFILEVERSIONINFOSIZEWPROC)GetProcAddress(ver_module, "GetFileVersionInfoSizeW");
+    GETFILEVERSIONINFOWPROC pGetFileVersionInfoW = (GETFILEVERSIONINFOWPROC)GetProcAddress(ver_module, "GetFileVersionInfoW");
+    VERQUERYVALUEWPROC pVerQueryValueW = (VERQUERYVALUEWPROC)GetProcAddress(ver_module, "VerQueryValueW");
+
+    if (!pGetFileVersionInfoSizeW || !pGetFileVersionInfoW || !pVerQueryValueW)
+    {
+        Log(L"Couldn't get version functions");
+        return;
+    }
+
+    DWORD size = pGetFileVersionInfoSizeW(L"kernel32", 0);
+    VS_FIXEDFILEINFO *info = NULL;
+    UINT len;
+
+    if (!size)
+    {
+        Log(L"Couldn't get windows version info size");
+        return;
+    }
+
+    LPVOID data = malloc(size);
+    if (!pGetFileVersionInfoW(L"kernel32", 0, size, data))
+    {
+        Log(L"Couldn't get windows version info");
+        free(data);
+        return;
+    }
+    BOOL success = pVerQueryValueW(data, L"\\", (LPVOID*)&info, &len);
+    if (!success || !info || !len)
+    {
+        Log(L"Couldn't query version value");
+        free(data);
+        return;
+    }
+
+    WORD major = HIWORD(info->dwFileVersionMS);
+    WORD minor = LOWORD(info->dwFileVersionMS);
+    WORD build = HIWORD(info->dwFileVersionLS);
+    WORD revis = LOWORD(info->dwFileVersionLS);
+
+    Log(TEXT("Windows Version: %u.%u Build %u (revision %d)"), major, minor, build, revis);
+    free(data);
+}
+
 void LogSystemStats()
 {
     HKEY key;
@@ -155,10 +216,7 @@ void LogSystemStats()
         Log(TEXT("monitor %u: pos={%d, %d}, size={%d, %d}"), i+1, info.rect.left, info.rect.top, info.rect.right-info.rect.left, info.rect.bottom-info.rect.top);
     }
 
-    OSVERSIONINFO osvi;
-    osvi.dwOSVersionInfoSize = sizeof(osvi);
-    GetVersionEx(&osvi);
-    Log(TEXT("Windows Version: %u.%u Build %u %S"), osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, osvi.szCSDVersion);
+    LogWindowsVersion();
 
     BOOL bComposition;
     DwmIsCompositionEnabled(&bComposition);
@@ -471,6 +529,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     LPWSTR *args = CommandLineToArgvW(GetCommandLineW(), &numArgs);
     LPWSTR profile = NULL;
     LPWSTR sceneCollection = NULL;
+    LPWSTR userService = NULL;
 
     bool bDisableMutex = false;
 
@@ -491,6 +550,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         {
             if (++i < numArgs)
                 sceneCollection = args[i];
+        }
+        else if (scmpi(args[i], L"-installservice") == 0)
+        {
+            if (++i < numArgs)
+            {
+                bDisableMutex = true;
+                userService = args[i];
+            }
         }
     }
 
@@ -601,6 +668,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 lpAllocator = (TSTR)malloc(size);
                 mcpy(lpAllocator, strAllocator.Array(), size);
             }
+
+            RegisterServiceFileHandler();
         }
 
         if(lpAllocator)
@@ -614,6 +683,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
         //EnableMemoryTracking(true, 8961);
+
+        //-----------------------------------------------------
+        // load locale
+
+        if (!locale->LoadStringFile(TEXT("locale/en.txt")))
+            AppWarning(TEXT("Could not open locale string file '%s'"), TEXT("locale/en.txt"));
+
+        String strLanguage = GlobalConfig->GetString(TEXT("General"), TEXT("Language"), TEXT("en"));
+        if (!strLanguage.CompareI(TEXT("en")))
+        {
+            String langFile;
+            langFile << TEXT("locale/") << strLanguage << TEXT(".txt");
+
+            if (!locale->LoadStringFile(langFile))
+                AppWarning(TEXT("Could not open locale string file '%s'"), langFile.Array());
+        }
+
+        // install user service here after we've loaded XT and locale
+        if (userService)
+        {
+            if (!InstallUserService(userService))
+                return 1;
+            return 0;
+        }
 
         //--------------------------------------------
 
