@@ -399,6 +399,7 @@ BEGIN
     COMBOBOX        IDC_X264PROFILE,170,106,82,62,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     RTEXT           "Settings.Advanced.NVENCPreset",IDC_NVENCPRESET_LABEL,7,94,160,8
     COMBOBOX        IDC_NVENCPRESET,170,91,120,62,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Settings.Advanced.NVENC2Pass",IDC_NVENC2PASS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,293,92,117,10
     RTEXT           "Settings.Advanced.QSVPreset",IDC_QSVPRESET_LABEL,7,94,160,8
     COMBOBOX        IDC_QSVPRESET,170,91,120,62,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     RTEXT           "Settings.Encoding.Video.KeyframeInterval",IDC_STATIC,7,124,160,8
@@ -905,8 +906,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,6,5,6
- PRODUCTVERSION 0,6,5,6
+ FILEVERSION 0,6,5,7
+ PRODUCTVERSION 0,6,5,7
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -922,12 +923,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Open Broadcaster Software"
-            VALUE "FileVersion", "0.6.5.6"
+            VALUE "FileVersion", "0.6.5.7"
             VALUE "InternalName", "OBS"
             VALUE "LegalCopyright", "Copyright (C) 2013-2015"
             VALUE "OriginalFilename", "OBS.exe"
             VALUE "ProductName", "Open Broadcaster Software"
-            VALUE "ProductVersion", "0.6.5.6"
+            VALUE "ProductVersion", "0.6.5.7"
         END
     END
     BLOCK "VarFileInfo"
